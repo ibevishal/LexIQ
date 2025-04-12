@@ -1,0 +1,9 @@
+streamlit
+matplotlib
+seaborn
+urlextract
+wordcloud
+pandas
+emoji
+
+To run this code: python -m streamlit run app.py
