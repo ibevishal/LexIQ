@@ -111,15 +111,15 @@ if uploaded_file is not None:
         # Monthly timeline chart
         st.markdown('<div class="section-title">🗓️ Monthly Timeline</div>', unsafe_allow_html=True)
         timeline = helper.monthly_timeline(selected_user, df)
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(7, 3))
         ax.plot(timeline['time'], timeline['message'], color='red')
         plt.xticks(rotation='vertical')
         st.pyplot(fig)
 
         # Daily timeline chart
-        st.markdown('<div class="section-title">📅 Daily Timeline</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">📅 Daily Timeline</div>', sunsafe_allow_html=True)
         daily_timeline = helper.daily_timeline(selected_user, df)
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(6, 3))
         ax.plot(daily_timeline['only_date'], daily_timeline['message'], color='blue')
         plt.xticks(rotation='vertical')
         st.pyplot(fig)
@@ -149,14 +149,14 @@ if uploaded_file is not None:
         # Weekly heatmap of activity
         st.markdown('<div class="section-title">📊 Weekly Activity Heatmap</div>', unsafe_allow_html=True)
         user_heatmap = helper.activity_heatmap(selected_user, df)
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(6, 3))
         ax = sns.heatmap(user_heatmap, cmap="YlGnBu")
         st.pyplot(fig)
         
         # Daily time-wise analysis
         st.markdown('<div class="section-title">⏰ Hourly Activity Trend</div>', unsafe_allow_html=True)
         hourly_activity = helper.hourly_activity_map(selected_user, df)
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(7, 3))
         ax.plot(hourly_activity.index, hourly_activity.values, marker='o', color='teal')
         ax.set_xticks(range(0, 24))
         ax.set_xlabel("Hour")
@@ -207,7 +207,7 @@ if uploaded_file is not None:
         with col2:
             if not emoji_df.empty:
                 fig, ax = plt.subplots()
-                ax.pie(emoji_df['count'].head(), labels=emoji_df['emoji'].head(), autopct="%0.2f%%")
+                ax.pie(emoji_df['count'].head(), labels=emoji_df['emoji'].head(), autopct="%0.1f%%")
                 st.pyplot(fig)
             else:
                 st.write("No emojis found.")  # Handle case with no emojis
