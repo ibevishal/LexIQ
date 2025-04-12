@@ -111,13 +111,13 @@ if uploaded_file is not None:
         # Monthly timeline chart
         st.markdown('<div class="section-title">🗓️ Monthly Timeline</div>', unsafe_allow_html=True)
         timeline = helper.monthly_timeline(selected_user, df)
-        fig, ax = plt.subplots(figsize=(7, 3))
+        fig, ax = plt.subplots(figsize=(6, 3))
         ax.plot(timeline['time'], timeline['message'], color='red')
         plt.xticks(rotation='vertical')
         st.pyplot(fig)
 
         # Daily timeline chart
-        st.markdown('<div class="section-title">📅 Daily Timeline</div>', sunsafe_allow_html=True)
+        st.markdown('<div class="section-title">📅 Daily Timeline</div>', unsafe_allow_html=True)
         daily_timeline = helper.daily_timeline(selected_user, df)
         fig, ax = plt.subplots(figsize=(6, 3))
         ax.plot(daily_timeline['only_date'], daily_timeline['message'], color='blue')
