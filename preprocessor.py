@@ -1,69 +1,49 @@
-import re  # For working with regular expressions
-import pandas as pd  # For data manipulation and analysis
-import unicodedata  # For Unicode normalization
+import re
+import pandas as pd
+import nltk
+nltk.download('vader_lexicon')  # <- Add this line right after importing nltk
+
+
+from nltk.sentiment import SentimentIntensityAnalyzer
+
 
 def preprocess(data):
-    # Normalize unicode characters to standard form (e.g., remove non-breaking spaces)
-    data = unicodedata.normalize("NFKC", data)
+    pattern = (r'(\d{1,2}/\d{1,2}/\d{2},\s\d{1,2}:\d{2}\u202fPM)\s-\s(.*?):\s(.*)')
+    matches = re.findall(pattern, data)
+    dates = [str(match[0]).replace('\u202f', ' ') for match in matches]
+    users = [match[1] for match in matches]
+    messages = [match[2] for match in matches]
+    df = pd.DataFrame({"Date": dates, "Users": users, "Messages": messages})
+    df['Date'] = pd.to_datetime(df['Date'], format="%m/%d/%y, %I:%M %p", errors="coerce")
 
-    # Define regex pattern to match WhatsApp message start: date, time, and dash separator
-    pattern = r'(\d{1,2}/\d{1,2}/\d{2,4}), (\d{1,2}:\d{2})\s?(am|pm|AM|PM)?\s-\s'
 
-    # Split the entire chat into list entries using the pattern, skipping the first split part (not a message)
-    messages = re.split(pattern, data)[1:]
+    df['Month'] = df['Date'].dt.month
+    df["Month_name"] = df["Date"].dt.month_name()
+    df['Year'] = df['Date'].dt.year
+    df['Day'] = df['Date'].dt.day_name()
+    df['date'] = df['Date'].dt.day
+    df["Hour"] = df["Date"].dt.strftime('%I').astype(int)
+    df["Minute"] = df["Date"].dt.minute
+    df['AM_PM'] = df['Date'].dt.strftime('%p')
+    # df['Date'] = df['Date'].dt.strftime('%m/%d/%Y, %I:%M %p')
 
-    # Group every 4 entries into chunks: [date, time, am/pm, message]
-    chunks = [messages[i:i+4] for i in range(0, len(messages), 4)]
 
-    # Prepare lists to hold parsed date objects and corresponding messages
-    dates, full_msgs = [], []
-    for chunk in chunks:
-        if len(chunk) == 4:
-            date_str, time_str, ampm, message = chunk
-            timestamp = f"{date_str} {time_str} {ampm}".strip()  # Construct complete timestamp string
-            try:
-                # Try parsing date with 2-digit year
-                date_obj = pd.to_datetime(timestamp, format="%d/%m/%y %I:%M %p")
-            except:
-                try:
-                    # Fallback: try parsing with 4-digit year
-                    date_obj = pd.to_datetime(timestamp, format="%d/%m/%Y %I:%M %p")
-                except:
-                    continue  # Skip if parsing fails
-            dates.append(date_obj)
-            full_msgs.append(message)
+    def get_sentiment_score(message):
+        sentiments = SentimentIntensityAnalyzer()
+        return sentiments.polarity_scores(message)['compound']
 
-    # Create a DataFrame with the parsed date and user-message text
-    df = pd.DataFrame({'date': dates, 'user_message': full_msgs})
+    df['Sentiment'] = df['Messages'].apply(get_sentiment_score)
 
-    # Split each message into user and actual message text
-    users, messages = [], []
-    for msg in df['user_message']:
-        # Split based on first occurrence of ': ' assuming "User: message"
-        parts = re.split(r'([^:]+):\s', msg, maxsplit=1)
-        if len(parts) == 3:
-            users.append(parts[1])  # Extract user name
-            messages.append(parts[2])  # Extract actual message
+    def polarity(score):
+        if score >= 0.05:
+            return 'positive'
+        elif score <= -0.05:
+            return 'negative'
         else:
-            users.append("group_notification")  # System or group notification message
-            messages.append(msg)
+            return 'neutral'
 
-    # Add user and message columns to the DataFrame
-    df['user'] = users
-    df['message'] = messages
-    df.drop(columns=['user_message'], inplace=True)  # Remove combined column
+    df['Sentiment_label'] = df['Sentiment'].apply(polarity)
 
-    # Extract and add time-based features from the datetime column
-    df['only_date'] = df['date'].dt.date  # Only date part
-    df['year'] = df['date'].dt.year  # Year
-    df['month_num'] = df['date'].dt.month  # Month as number
-    df['month'] = df['date'].dt.month_name()  # Month as full name
-    df['day'] = df['date'].dt.day  # Day of the month
-    df['day_name'] = df['date'].dt.day_name()  # Day of the week
-    df['hour'] = df['date'].dt.hour  # Hour of the day
-    df['minute'] = df['date'].dt.minute  # Minute of the hour
 
-    # Create time period strings (e.g., "08-09") for hourly heatmap grouping
-    df['period'] = df['hour'].apply(lambda h: f"{h:02d}-{(h+1)%24:02d}")
 
-    return df  # Return the cleaned and processed DataFrame
+    return df

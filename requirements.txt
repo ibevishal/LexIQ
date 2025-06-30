@@ -1,9 +1,8 @@
 streamlit
-matplotlib
-seaborn
-urlextract
-wordcloud
+plotly
+numpy
 pandas
 emoji
-
-# Torun-this code: python -m streamlit run app.py
+urlextract
+wordcloud
+nltk
